@@ -1,0 +1,139 @@
+{
+    "name": "Canary Failed Pipeline",
+    "application": "sampleapp",
+    "keepWaitingPipelines": false,
+    "lastModifiedBy": "anonymous",
+    "limitConcurrent": true,
+    "parameterConfig": [],
+    "stages": [
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 100
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 0
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Send 100% to old Prod",
+        "refId": "1",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "app": "sampleapp",
+        "cloudProvider": "kubernetes",
+        "kinds": [
+          "deployment"
+        ],
+        "labelSelectors": {
+          "selectors": [
+            {
+              "key": "app",
+              "kind": "EQUALS",
+              "values": [
+                "sampleapp-baseline"
+              ]
+            }
+          ]
+        },
+        "location": "sampleapp",
+        "mode": "label",
+        "name": "Delete Baseline",
+        "options": {
+          "cascading": true
+        },
+        "refId": "2",
+        "requisiteStageRefIds": [
+          "1"
+        ],
+        "type": "deleteManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "app": "sampleapp",
+        "cloudProvider": "kubernetes",
+        "kinds": [
+          "deployment"
+        ],
+        "labelSelectors": {
+          "selectors": [
+            {
+              "key": "app",
+              "kind": "EQUALS",
+              "values": [
+                "sampleapp-canary"
+              ]
+            }
+          ]
+        },
+        "location": "sampleapp",
+        "mode": "label",
+        "name": "Delete Canary",
+        "options": {
+          "cascading": true
+        },
+        "refId": "3",
+        "requisiteStageRefIds": [
+          "1"
+        ],
+        "type": "deleteManifest"
+      }
+    ],
+    "triggers": [],
+    "updateTs": "1567911109240"
+  }

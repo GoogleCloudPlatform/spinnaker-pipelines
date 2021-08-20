@@ -1,0 +1,142 @@
+{
+    "name": "Trigger Deploy Pipeline",
+    "application": "sampleapp",
+    "keepWaitingPipelines": false,
+    "lastModifiedBy": "anonymous",
+    "limitConcurrent": true,
+    "parameterConfig": [
+      {
+        "default": "",
+        "description": "",
+        "hasOptions": true,
+        "label": "Success Rate",
+        "name": "successRate",
+        "options": [
+          {
+            "value": "10"
+          },
+          {
+            "value": "20"
+          },
+          {
+            "value": "30"
+          },
+          {
+            "value": "40"
+          },
+          {
+            "value": "50"
+          },
+          {
+            "value": "60"
+          },
+          {
+            "value": "70"
+          },
+          {
+            "value": "80"
+          },
+          {
+            "value": "90"
+          },
+          {
+            "value": "100"
+          }
+        ],
+        "pinned": false,
+        "required": true
+      }
+    ],
+    "stages": [
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "First install",
+        "preconditions": [
+          {
+            "cloudProvider": "kubernetes",
+            "context": {
+              "cluster": "deployment sampleapp",
+              "comparison": "==",
+              "credentials": "gke-1-acct",
+              "expected": 0,
+              "moniker": {
+                "app": "sampleapp",
+                "cluster": "deployment sampleapp"
+              },
+              "regions": [
+                "sampleapp"
+              ]
+            },
+            "failPipeline": false,
+            "type": "clusterSize"
+          }
+        ],
+        "refId": "1",
+        "requisiteStageRefIds": [],
+        "type": "checkPreconditions"
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "Canary Install",
+        "preconditions": [
+          {
+            "cloudProvider": "kubernetes",
+            "context": {
+              "cluster": "deployment sampleapp",
+              "comparison": ">=",
+              "credentials": "gke-1-acct",
+              "expected": 1,
+              "moniker": {
+                "app": "sampleapp",
+                "cluster": "deployment sampleapp"
+              },
+              "regions": [
+                "sampleapp"
+              ]
+            },
+            "failPipeline": false,
+            "type": "clusterSize"
+          }
+        ],
+        "refId": "2",
+        "requisiteStageRefIds": [],
+        "type": "checkPreconditions"
+      },
+      {
+        "application": "sampleapp",
+        "failPipeline": true,
+        "name": "Prod Deploy",
+        "pipeline": "PROD_DEPLOY_PIPELINE_ID",
+        "pipelineParameters": {
+          "successRate": "${parameters.successRate}"
+        },
+        "refId": "3",
+        "requisiteStageRefIds": [
+          "1"
+        ],
+        "type": "pipeline",
+        "waitForCompletion": true
+      },
+      {
+        "application": "sampleapp",
+        "failPipeline": true,
+        "name": "Canary Deploy",
+        "pipeline": "CANARY_DEPLOY_PIPELINE_ID",
+        "pipelineParameters": {
+          "successRate": "${parameters.successRate}"
+        },
+        "refId": "4",
+        "requisiteStageRefIds": [
+          "2"
+        ],
+        "type": "pipeline",
+        "waitForCompletion": true
+      }
+    ],
+    "triggers": [],
+    "updateTs": "1567923949277"
+  }

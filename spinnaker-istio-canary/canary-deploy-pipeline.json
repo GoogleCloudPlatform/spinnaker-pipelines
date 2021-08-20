@@ -1,0 +1,1134 @@
+{
+    "name": "Canary Deploy Pipeline",
+    "application": "sampleapp",
+    "appConfig": {},
+    "description": "This pipeline deploys a canary version of the application, and a baseline (identical to production) version.\nIt compares them, and if the canary is OK, it triggers the production deployment pipeline.",
+    "executionEngine": "v2",
+    "keepWaitingPipelines": false,
+    "lastModifiedBy": "anonymous",
+    "limitConcurrent": true,
+    "parallel": true,
+    "parameterConfig": [
+      {
+        "description": "Success rate of the application",
+        "hasOptions": true,
+        "label": "Success Rate",
+        "name": "successRate",
+        "options": [
+          {
+            "value": "0"
+          },
+          {
+            "value": "10"
+          },
+          {
+            "value": "20"
+          },
+          {
+            "value": "30"
+          },
+          {
+            "value": "40"
+          },
+          {
+            "value": "50"
+          },
+          {
+            "value": "60"
+          },
+          {
+            "value": "70"
+          },
+          {
+            "value": "80"
+          },
+          {
+            "value": "90"
+          },
+          {
+            "value": "100"
+          }
+        ],
+        "required": true
+      }
+    ],
+    "stages": [
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "expectedArtifacts": [],
+        "manifestArtifactAccount": "embedded-artifact",
+        "manifests": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+              "labels": {
+                "app": "sampleapp-canary",
+                "version": "canary"
+              },
+              "name": "sampleapp-canary",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "replicas": 1,
+              "selector": {
+                "matchLabels": {
+                  "app": "sampleapp",
+                  "version": "canary"
+                }
+              },
+              "template": {
+                "metadata": {
+                  "annotations": {
+                    "prometheus.io/scrape": "true",
+                    "prometheus.io/port": "8000"
+                  },
+                  "labels": {
+                    "app": "sampleapp",
+                    "version": "canary"
+                  }
+                },
+                "spec": {
+                  "containers": [
+                    {
+                      "env": [
+                        {
+                          "name": "SUCCESS_RATE",
+                          "valueFrom": {
+                            "configMapKeyRef": {
+                              "key": "SUCCESS_RATE",
+                              "name": "sampleapp-config-canary"
+                            }
+                          }
+                        }
+                      ],
+                      "image": "gcr.io/spinnaker-marketplace/sampleapp:latest",
+                      "name": "sampleapp",
+                      "ports": [
+                        {
+                          "containerPort": 8000
+                        },
+                        {
+                          "containerPort": 8080
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Deploy Canary",
+        "refId": "3",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requiredArtifactIds": [
+          "2d1febb3-6b7a-42d4-bcf1-85199c3b1aad"
+        ],
+        "requisiteStageRefIds": [
+          "10",
+          "8",
+          "37"
+        ],
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "embedded-artifact",
+        "manifestArtifactId": "0ac4fa1a-4629-4901-94a5-c5579c775736",
+        "manifests": [
+          {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+              "labels": {
+                "app": "sampleapp-baseline",
+                "version": "baseline"
+              },
+              "name": "sampleapp-baseline",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "replicas": 1,
+              "selector": {
+                "matchLabels": {
+                  "app": "sampleapp",
+                  "version": "baseline"
+                }
+              },
+              "template": {
+                "metadata": {
+                  "annotations": {
+                    "prometheus.io/scrape": "true",
+                    "prometheus.io/port": "8000"
+                  },
+                  "labels": {
+                    "app": "sampleapp",
+                    "version": "baseline"
+                  }
+                },
+                "spec": {
+                  "containers": [
+                    {
+                      "env": [
+                        {
+                          "name": "SUCCESS_RATE",
+                          "valueFrom": {
+                            "configMapKeyRef": {
+                              "key": "SUCCESS_RATE",
+                              "name": "sampleapp-config-prod"
+                            }
+                          }
+                        }
+                      ],
+                      "image": "gcr.io/spinnaker-marketplace/sampleapp:latest",
+                      "name": "sampleapp",
+                      "ports": [
+                        {
+                          "containerPort": 8000
+                        },
+                        {
+                          "containerPort": 8080
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Deploy Baseline",
+        "refId": "4",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requiredArtifactIds": [
+          "e00b39b2-e6a1-41a7-8e1a-bef37c3313a7"
+        ],
+        "requisiteStageRefIds": [
+          "8",
+          "10",
+          "37"
+        ],
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "application": "sampleapp",
+        "comments": "",
+        "executionOptions": {
+          "successful": true
+        },
+        "expectedArtifact": {
+          "defaultArtifact": {
+            "customKind": true,
+            "id": "3fbb9a36-8fd8-487c-8052-6626fa9819fb"
+          },
+          "displayName": "tame-crab-16",
+          "id": "e00b39b2-e6a1-41a7-8e1a-bef37c3313a7",
+          "matchArtifact": {
+            "kind": "custom",
+            "name": "sampleapp-config-prod",
+            "type": "kubernetes/configMap"
+          },
+          "useDefaultArtifact": false,
+          "usePriorArtifact": false
+        },
+        "name": "Find Baseline Version",
+        "pipeline": "PROD_DEPLOY_PIPELINE_ID",
+        "refId": "8",
+        "requisiteStageRefIds": [],
+        "type": "findArtifactFromExecution"
+      },
+      {
+        "application": "sampleapp",
+        "comments": "",
+        "failPipeline": true,
+        "name": "Upgrade Production",
+        "pipeline": "PROD_DEPLOY_PIPELINE_ID",
+        "pipelineParameters": {
+          "successRate": "${ parameters.successRate }"
+        },
+        "refId": "9",
+        "requisiteStageRefIds": [
+          "34"
+        ],
+        "stageEnabled": {
+          "expression": "${ #stage('Canary Analysis at 40%')['status'].toString() == 'SUCCEEDED'}",
+          "type": "expression"
+        },
+        "type": "pipeline",
+        "waitForCompletion": true
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "expectedArtifacts": [
+          {
+            "defaultArtifact": {
+              "kind": "custom"
+            },
+            "id": "2d1febb3-6b7a-42d4-bcf1-85199c3b1aad",
+            "matchArtifact": {
+              "kind": "custom",
+              "name": "sampleapp-config-canary",
+              "type": "kubernetes/configMap"
+            },
+            "useDefaultArtifact": false,
+            "usePriorExecution": false
+          }
+        ],
+        "manifestArtifactAccount": "embedded-artifact",
+        "manifests": [
+          {
+            "apiVersion": "v1",
+            "data": {
+              "SUCCESS_RATE": "${ parameters.successRate }"
+            },
+            "kind": "ConfigMap",
+            "metadata": {
+              "labels": {
+                "app": "sampleapp-canary"
+              },
+              "name": "sampleapp-config-canary",
+              "namespace": "sampleapp"
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Deploy Canary Config",
+        "refId": "10",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [],
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "app": "sampleapp",
+        "cloudProvider": "kubernetes",
+        "kinds": [
+          "deployment"
+        ],
+        "labelSelectors": {
+          "selectors": [
+            {
+              "key": "app",
+              "kind": "EQUALS",
+              "values": [
+                "sampleapp-canary"
+              ]
+            }
+          ]
+        },
+        "location": "sampleapp",
+        "mode": "label",
+        "name": "Delete Canary",
+        "options": {
+          "cascading": true
+        },
+        "refId": "12",
+        "requisiteStageRefIds": [
+          "24"
+        ],
+        "type": "deleteManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "app": "sampleapp",
+        "cloudProvider": "kubernetes",
+        "kinds": [
+          "deployment"
+        ],
+        "labelSelectors": {
+          "selectors": [
+            {
+              "key": "app",
+              "kind": "EQUALS",
+              "values": [
+                "sampleapp-baseline"
+              ]
+            }
+          ]
+        },
+        "location": "sampleapp",
+        "mode": "label",
+        "name": "Delete Baseline",
+        "options": {
+          "cascading": true
+        },
+        "refId": "13",
+        "requisiteStageRefIds": [
+          "24"
+        ],
+        "type": "deleteManifest"
+      },
+      {
+        "analysisType": "realTime",
+        "canaryConfig": {
+          "beginCanaryAnalysisAfterMins": "0",
+          "canaryAnalysisIntervalMins": "5",
+          "canaryConfigId": "85d778fd-318a-4429-8a0a-d64d40139e9e",
+          "lifetimeDuration": "PT0H5M",
+          "metricsAccountName": "kayenta-tutorial",
+          "scopes": [
+            {
+              "controlLocation": "sampleapp",
+              "controlScope": "sampleapp-baseline",
+              "experimentLocation": "sampleapp",
+              "experimentScope": "sampleapp-canary",
+              "extendedScopeParams": {},
+              "scopeName": "default"
+            }
+          ],
+          "scoreThresholds": {
+            "marginal": "75",
+            "pass": "95"
+          },
+          "storageAccountName": "my-google-account"
+        },
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": true,
+        "failPipeline": false,
+        "name": "Canary Analysis at 40%",
+        "refId": "16",
+        "requisiteStageRefIds": [
+          "21"
+        ],
+        "type": "kayentaCanary"
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 80
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 10
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 10
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Send 10% to Canary/Baseline",
+        "refId": "17",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [
+          "3",
+          "4"
+        ],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "analysisType": "realTime",
+        "canaryConfig": {
+          "beginCanaryAnalysisAfterMins": "0",
+          "canaryAnalysisIntervalMins": "5",
+          "canaryConfigId": "85d778fd-318a-4429-8a0a-d64d40139e9e",
+          "lifetimeDuration": "PT0H5M",
+          "metricsAccountName": "kayenta-tutorial",
+          "scopes": [
+            {
+              "controlLocation": "sampleapp",
+              "controlScope": "sampleapp-baseline",
+              "experimentLocation": "sampleapp",
+              "experimentScope": "sampleapp-canary",
+              "extendedScopeParams": {},
+              "scopeName": "default"
+            }
+          ],
+          "scoreThresholds": {
+            "marginal": "75",
+            "pass": "95"
+          },
+          "storageAccountName": "my-google-account"
+        },
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": true,
+        "failPipeline": false,
+        "name": "Canary Analysis at 10%",
+        "refId": "18",
+        "requisiteStageRefIds": [
+          "17"
+        ],
+        "type": "kayentaCanary"
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 60
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 20
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 20
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Send 20% to Canary/Baseline",
+        "refId": "19",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [
+          "25"
+        ],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "stageEnabled": {
+          "expression": "${ #stage('Canary Analysis at 10%')['status'].toString() == 'SUCCEEDED'}",
+          "type": "expression"
+        },
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "analysisType": "realTime",
+        "canaryConfig": {
+          "beginCanaryAnalysisAfterMins": "0",
+          "canaryAnalysisIntervalMins": "5",
+          "canaryConfigId": "85d778fd-318a-4429-8a0a-d64d40139e9e",
+          "lifetimeDuration": "PT0H5M",
+          "metricsAccountName": "kayenta-tutorial",
+          "scopes": [
+            {
+              "controlLocation": "sampleapp",
+              "controlScope": "sampleapp-baseline",
+              "experimentLocation": "sampleapp",
+              "experimentScope": "sampleapp-canary",
+              "extendedScopeParams": {},
+              "scopeName": "default"
+            }
+          ],
+          "scoreThresholds": {
+            "marginal": "75",
+            "pass": "95"
+          },
+          "storageAccountName": "my-google-account"
+        },
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": true,
+        "failPipeline": false,
+        "name": "Canary Analysis at 20%",
+        "refId": "20",
+        "requisiteStageRefIds": [
+          "19"
+        ],
+        "type": "kayentaCanary"
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 20
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 40
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 40
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Send 40% to Canary/Baseline",
+        "refId": "21",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [
+          "30"
+        ],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "stageEnabled": {
+          "expression": "${ #stage('Canary Analysis at 20%')['status'].toString() == 'SUCCEEDED'}",
+          "type": "expression"
+        },
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 60
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 0
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 40
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Send 60% to New Prod",
+        "refId": "22",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [
+          "9"
+        ],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 100
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 0
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Send 100% to New Prod",
+        "refId": "24",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [
+          "38"
+        ],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "If Canary at 10% passes",
+        "preconditions": [
+          {
+            "context": {
+              "expression": "${ #stage('Canary Analysis at 10%')['status'].toString() == 'SUCCEEDED'}"
+            },
+            "failPipeline": false,
+            "type": "expression"
+          }
+        ],
+        "refId": "25",
+        "requisiteStageRefIds": [
+          "18"
+        ],
+        "type": "checkPreconditions"
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "If Canary at 10% fails",
+        "preconditions": [
+          {
+            "context": {
+              "expression": "${ #stage('Canary Analysis at 10%')['status'].toString() != 'SUCCEEDED'}"
+            },
+            "failPipeline": false,
+            "type": "expression"
+          }
+        ],
+        "refId": "26",
+        "requisiteStageRefIds": [
+          "18"
+        ],
+        "type": "checkPreconditions"
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "If Canary at 20% passes",
+        "preconditions": [
+          {
+            "context": {
+              "expression": "${ #stage('Canary Analysis at 20%')['status'].toString() == 'SUCCEEDED'}"
+            },
+            "failPipeline": false,
+            "type": "expression"
+          }
+        ],
+        "refId": "30",
+        "requisiteStageRefIds": [
+          "20"
+        ],
+        "type": "checkPreconditions"
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "If Canary at 20% fails",
+        "preconditions": [
+          {
+            "context": {
+              "expression": "${ #stage('Canary Analysis at 20%')['status'].toString() != 'SUCCEEDED'}"
+            },
+            "failPipeline": false,
+            "type": "expression"
+          }
+        ],
+        "refId": "31",
+        "requisiteStageRefIds": [
+          "20"
+        ],
+        "type": "checkPreconditions"
+      },
+      {
+        "application": "sampleapp",
+        "failPipeline": true,
+        "name": "100% to old Prod",
+        "pipeline": "CANARY_FAILED_PIPELINE_ID",
+        "pipelineParameters": {},
+        "refId": "32",
+        "requisiteStageRefIds": [
+          "26"
+        ],
+        "type": "pipeline",
+        "waitForCompletion": true
+      },
+      {
+        "application": "sampleapp",
+        "failPipeline": true,
+        "name": "100% to old Prod",
+        "pipeline": "CANARY_FAILED_PIPELINE_ID",
+        "pipelineParameters": {},
+        "refId": "33",
+        "requisiteStageRefIds": [
+          "31"
+        ],
+        "type": "pipeline",
+        "waitForCompletion": true
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "If Canary at 40% passes",
+        "preconditions": [
+          {
+            "context": {
+              "expression": "${ #stage('Canary Analysis at 40%')['status'].toString() == 'SUCCEEDED'}"
+            },
+            "failPipeline": false,
+            "type": "expression"
+          }
+        ],
+        "refId": "34",
+        "requisiteStageRefIds": [
+          "16"
+        ],
+        "type": "checkPreconditions"
+      },
+      {
+        "completeOtherBranchesThenFail": false,
+        "continuePipeline": false,
+        "failPipeline": false,
+        "name": "If Canary at 40% fails",
+        "preconditions": [
+          {
+            "context": {
+              "expression": "${ #stage('Canary Analysis at 40%')['status'].toString() != 'SUCCEEDED'}"
+            },
+            "failPipeline": false,
+            "type": "expression"
+          }
+        ],
+        "refId": "35",
+        "requisiteStageRefIds": [
+          "16"
+        ],
+        "type": "checkPreconditions"
+      },
+      {
+        "application": "sampleapp",
+        "failPipeline": true,
+        "name": "100% to old Prod",
+        "pipeline": "CANARY_FAILED_PIPELINE_ID",
+        "pipelineParameters": {},
+        "refId": "36",
+        "requisiteStageRefIds": [
+          "35"
+        ],
+        "type": "pipeline",
+        "waitForCompletion": true
+      },
+      {
+        "account": "gke-1-acct",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "docker-registry",
+        "manifests": [
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "VirtualService",
+            "metadata": {
+              "name": "sampleapp-virtual-service",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "hosts": [
+                "sampleapp"
+              ],
+              "http": [
+                {
+                  "route": [
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "prod"
+                      },
+                      "weight": 100
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "baseline"
+                      },
+                      "weight": 0
+                    },
+                    {
+                      "destination": {
+                        "host": "sampleapp",
+                        "subset": "canary"
+                      },
+                      "weight": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "apiVersion": "networking.istio.io/v1alpha3",
+            "kind": "DestinationRule",
+            "metadata": {
+              "name": "sampleapp-destination-rule",
+              "namespace": "sampleapp"
+            },
+            "spec": {
+              "host": "sampleapp",
+              "subsets": [
+                {
+                  "labels": {
+                    "version": "prod"
+                  },
+                  "name": "prod"
+                },
+                {
+                  "labels": {
+                    "version": "baseline"
+                  },
+                  "name": "baseline"
+                },
+                {
+                  "labels": {
+                    "version": "canary"
+                  },
+                  "name": "canary"
+                }
+              ]
+            }
+          }
+        ],
+        "moniker": {
+          "app": "sampleapp"
+        },
+        "name": "Deploy VirtualService",
+        "refId": "37",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [],
+        "skipExpressionEvaluation": false,
+        "source": "text",
+        "trafficManagement": {
+          "enabled": false,
+          "options": {
+            "enableTraffic": false,
+            "services": []
+          }
+        },
+        "type": "deployManifest"
+      },
+      {
+        "failPipeline": true,
+        "instructions": "Continue to new production?",
+        "judgmentInputs": [],
+        "name": "Confirm new Prod?",
+        "notifications": [],
+        "refId": "38",
+        "requisiteStageRefIds": [
+          "22"
+        ],
+        "type": "manualJudgment"
+      }
+    ],
+    "triggers": [],
+    "updateTs": "1567912242394"
+  }
